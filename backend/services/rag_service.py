@@ -159,7 +159,27 @@ def _build_retriever_and_docs(question: str, doc_ids: list[str] | None = None):
             prompt=multi_prompt,
         )
 
+    # 上下文压缩：用LLM过滤掉和问题无关的内容
+    if _rag_config.get("use_compression", False):
+        from langchain.retrievers.document_compressors import LLMChainExtractor
+        from langchain.retrievers import ContextualCompressionRetriever
+        compressor = LLMChainExtractor.from_llm(get_llm())
+        retriever = ContextualCompressionRetriever(
+            base_compressor=compressor,
+            base_retriever=retriever,
+        )
+
     retrieved_docs = retriever.invoke(question)
+
+    # 长上下文重排序：把最相关的文档放在首尾，避免"lost in the middle"问题
+    if _rag_config.get("use_rerank", False):
+        from langchain_community.document_transformers import LongContextReorder
+        top_k = _rag_config.get("rerank_top_k", 5)
+        if len(retrieved_docs) > top_k:
+            retrieved_docs = retrieved_docs[:top_k]
+        reorder = LongContextReorder()
+        retrieved_docs = reorder.transform_documents(retrieved_docs)
+
     return vs, retrieved_docs
 
 
