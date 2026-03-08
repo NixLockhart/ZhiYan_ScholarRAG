@@ -143,6 +143,22 @@ def _build_retriever_and_docs(question: str, doc_ids: list[str] | None = None):
         )
 
     retriever = vs.as_retriever(search_kwargs=search_kwargs)
+
+    # 多查询检索：用LLM把问题改写成多个不同角度的查询，提高召回率
+    if _rag_config.get("use_multi_query", False):
+        from langchain.retrievers.multi_query import MultiQueryRetriever
+        multi_count = _rag_config.get("multi_query_count", 3)
+        multi_prompt = ChatPromptTemplate.from_template(
+            "你是一个AI助手。请针对以下问题生成" + str(multi_count) + "个不同角度的替代问题，"
+            "用于从向量数据库中检索相关文档。每行输出一个问题，不要编号。\n"
+            "原始问题：{question}\n替代问题："
+        )
+        retriever = MultiQueryRetriever.from_llm(
+            retriever=retriever,
+            llm=get_llm(),
+            prompt=multi_prompt,
+        )
+
     retrieved_docs = retriever.invoke(question)
     return vs, retrieved_docs
 
