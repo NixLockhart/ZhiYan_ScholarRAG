@@ -146,7 +146,7 @@ def _build_retriever_and_docs(question: str, doc_ids: list[str] | None = None):
 
     # 多查询检索：用LLM把问题改写成多个不同角度的查询，提高召回率
     if _rag_config.get("use_multi_query", False):
-        from langchain.retrievers.multi_query import MultiQueryRetriever
+        from langchain_classic.retrievers.multi_query import MultiQueryRetriever
         multi_count = _rag_config.get("multi_query_count", 3)
         multi_prompt = ChatPromptTemplate.from_template(
             "你是一个AI助手。请针对以下问题生成" + str(multi_count) + "个不同角度的替代问题，"
@@ -161,8 +161,8 @@ def _build_retriever_and_docs(question: str, doc_ids: list[str] | None = None):
 
     # 上下文压缩：用LLM过滤掉和问题无关的内容
     if _rag_config.get("use_compression", False):
-        from langchain.retrievers.document_compressors import LLMChainExtractor
-        from langchain.retrievers import ContextualCompressionRetriever
+        from langchain_classic.retrievers.document_compressors import LLMChainExtractor
+        from langchain_classic.retrievers import ContextualCompressionRetriever
         compressor = LLMChainExtractor.from_llm(get_llm())
         retriever = ContextualCompressionRetriever(
             base_compressor=compressor,
