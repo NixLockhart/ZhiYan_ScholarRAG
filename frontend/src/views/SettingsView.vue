@@ -63,12 +63,21 @@ onMounted(() => {
     <el-form label-width="140px" label-position="left">
       <h3 style="margin-bottom: 20px; color: #303133;">RAG 检索增强配置</h3>
 
+      <el-alert
+        type="info"
+        :closable="false"
+        style="margin-bottom: 20px;"
+      >
+        <p>以下配置会影响问答时的检索策略和结果质量。</p>
+        <p>开启更多功能可以提高回答准确率，但会增加响应时间。</p>
+      </el-alert>
+
       <el-divider content-position="left">检索策略</el-divider>
 
       <el-form-item label="多查询检索">
         <el-switch v-model="config.use_multi_query" />
         <span style="margin-left: 12px; font-size: 12px; color: #909399;">
-          将问题扩展为多个查询以提高召回率
+          自动将问题改写为多个不同角度的查询，提高文档召回率
         </span>
       </el-form-item>
 
@@ -99,7 +108,7 @@ onMounted(() => {
       <el-form-item label="重排序优化">
         <el-switch v-model="config.use_rerank" />
         <span style="margin-left: 12px; font-size: 12px; color: #909399;">
-          对检索结果重排序，将最相关内容放在首尾
+          将最相关的内容放在上下文首尾，缓解"中间丢失"问题
         </span>
       </el-form-item>
 
@@ -117,7 +126,7 @@ onMounted(() => {
       <el-form-item label="上下文压缩">
         <el-switch v-model="config.use_compression" />
         <span style="margin-left: 12px; font-size: 12px; color: #909399;">
-          过滤无关内容，保留与问题相关的语句
+          用LLM过滤无关段落，只保留与问题相关的语句（较慢）
         </span>
       </el-form-item>
 
