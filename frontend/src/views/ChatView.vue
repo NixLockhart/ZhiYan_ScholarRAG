@@ -136,8 +136,25 @@ function askExample(q) {
   sendMessage()
 }
 
+async function loadHistory() {
+  try {
+    const history = await getChatHistory()
+    messages.value = history.map(msg => ({
+      role: msg.role,
+      content: msg.content,
+      sources: msg.sources || [],
+      time_ms: msg.query_time_ms || null,
+      streaming: false,
+    }))
+    scrollToBottom()
+  } catch {
+    // 加载失败不影响使用
+  }
+}
+
 onMounted(() => {
   loadDocuments()
+  loadHistory()
 })
 </script>
 
