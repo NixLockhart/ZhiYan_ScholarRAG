@@ -1,4 +1,6 @@
 import time
+import json
+import os
 
 from langchain_qdrant import QdrantVectorStore
 from langchain_core.prompts import ChatPromptTemplate
@@ -10,16 +12,18 @@ from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition,
 from config import QDRANT_PATH, COLLECTION_NAME, DEFAULT_RETRIEVE_K
 from services.llm_service import get_llm, get_embeddings
 
+# 持久化文件路径
+_DATA_DIR = os.path.dirname(os.path.dirname(__file__))
+_HISTORY_FILE = os.path.join(_DATA_DIR, "chat_history.json")
+_CONFIG_FILE = os.path.join(_DATA_DIR, "rag_config.json")
+
 # 向量存储实例
 _vectorstore = None
 # Qdrant 客户端实例
 _qdrant_client = None
 
-# 对话历史（内存存储，后续可迁移到数据库）
-_chat_history: list[dict] = []
-
-# RAG 配置（运行时状态）
-_rag_config = {
+# RAG 默认配置
+_DEFAULT_RAG_CONFIG = {
     "use_multi_query": True,
     "multi_query_count": 3,
     "retrieve_k": DEFAULT_RETRIEVE_K,
@@ -27,6 +31,31 @@ _rag_config = {
     "use_rerank": True,
     "use_compression": False,
 }
+
+
+def _load_json(filepath, default):
+    """从JSON文件加载数据，文件不存在则返回默认值"""
+    try:
+        if os.path.exists(filepath):
+            with open(filepath, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return default
+
+
+def _save_json(filepath, data):
+    """保存数据到JSON文件"""
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+# 启动时从文件加载
+_chat_history: list[dict] = _load_json(_HISTORY_FILE, [])
+_rag_config: dict = {**_DEFAULT_RAG_CONFIG, **_load_json(_CONFIG_FILE, {})}
 
 # 学术论文助手 Prompt
 QA_PROMPT = ChatPromptTemplate.from_template(
@@ -234,6 +263,7 @@ def query(question: str, doc_ids: list[str] | None = None) -> dict:
         "sources": sources,
         "query_time_ms": elapsed_ms,
     })
+    _save_json(_HISTORY_FILE, _chat_history)
 
     return {
         "answer": answer,
@@ -286,6 +316,7 @@ def query_stream(question: str, doc_ids: list[str] | None = None):
         "sources": sources,
         "query_time_ms": elapsed_ms,
     })
+    _save_json(_HISTORY_FILE, _chat_history)
 
 
 # ========== 对话历史管理 ==========
@@ -296,6 +327,7 @@ def get_chat_history() -> list[dict]:
 
 def clear_chat_history():
     _chat_history.clear()
+    _save_json(_HISTORY_FILE, _chat_history)
 
 
 # ========== RAG 配置管理 ==========
@@ -306,3 +338,4 @@ def get_rag_config() -> dict:
 
 def update_rag_config(new_config: dict):
     _rag_config.update(new_config)
+    _save_json(_CONFIG_FILE, _rag_config)

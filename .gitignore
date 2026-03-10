@@ -22,6 +22,8 @@ venv/
 # ========================
 backend/uploads/
 backend/qdrant_data/
+backend/chat_history.json
+backend/rag_config.json
 
 # ========================
 #  前端
