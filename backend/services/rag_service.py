@@ -214,6 +214,8 @@ def _build_retriever_and_docs(question: str, doc_ids: list[str] | None = None):
 
 def _extract_sources(retrieved_docs):
     """从检索文档中提取来源信息"""
+    from services.document_service import get_document
+
     sources = []
     seen = set()
     for doc in retrieved_docs:
@@ -228,9 +230,17 @@ def _extract_sources(retrieved_docs):
             dedup_key = f"{meta.get('source', '')}_{chunk_idx}"
         if dedup_key not in seen:
             seen.add(dedup_key)
+            # 优先用chunk自带的原始文件名，没有则从文档存储中查找
+            filename = meta.get("original_filename")
+            if not filename:
+                doc_info = get_document(meta.get("doc_id", ""))
+                if doc_info:
+                    filename = doc_info.get("filename", "")
+            if not filename:
+                filename = meta.get("source", "").split("/")[-1].split("\\")[-1]
             sources.append({
                 "doc_id": meta.get("doc_id", ""),
-                "filename": meta.get("original_filename", meta.get("source", "").split("/")[-1].split("\\")[-1]),
+                "filename": filename,
                 "page_label": page_label,
                 "content": doc.page_content[:300],
             })
