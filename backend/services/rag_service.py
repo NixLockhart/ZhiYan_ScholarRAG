@@ -218,13 +218,20 @@ def _extract_sources(retrieved_docs):
     seen = set()
     for doc in retrieved_docs:
         meta = doc.metadata
-        key = f"{meta.get('source', '')}_{meta.get('page', 0)}"
-        if key not in seen:
-            seen.add(key)
+        # PDF有page字段，DOCX没有，用chunk_index代替
+        if "page" in meta:
+            page_label = f"第{meta['page'] + 1}页"
+            dedup_key = f"{meta.get('source', '')}_{meta['page']}"
+        else:
+            chunk_idx = meta.get("chunk_index", 0)
+            page_label = f"第{chunk_idx + 1}段"
+            dedup_key = f"{meta.get('source', '')}_{chunk_idx}"
+        if dedup_key not in seen:
+            seen.add(dedup_key)
             sources.append({
                 "doc_id": meta.get("doc_id", ""),
-                "filename": meta.get("source", "").split("/")[-1].split("\\")[-1],
-                "page": meta.get("page", 0) + 1,
+                "filename": meta.get("original_filename", meta.get("source", "").split("/")[-1].split("\\")[-1]),
+                "page_label": page_label,
                 "content": doc.page_content[:300],
             })
     return sources

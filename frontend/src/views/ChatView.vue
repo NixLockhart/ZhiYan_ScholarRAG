@@ -228,7 +228,7 @@ onMounted(() => {
             >
               <template #reference>
                 <el-tag size="small" effect="plain" style="cursor: pointer;">
-                  📄 {{ src.filename }} - 第{{ src.page }}页
+                  📄 {{ src.filename }} - {{ src.page_label }}
                 </el-tag>
               </template>
               <div style="font-size: 13px; line-height: 1.6; max-height: 200px; overflow-y: auto;">

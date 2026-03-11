@@ -122,6 +122,10 @@ def process_document(file_bytes: bytes, filename: str) -> dict:
     pages = load_document(file_path, file_type)
     chunks = split_documents(pages)
 
+    # 把原始文件名写入每个chunk的metadata，供引用来源展示
+    for chunk in chunks:
+        chunk.metadata["original_filename"] = filename
+
     doc_info = {
         "doc_id": doc_id,
         "filename": filename,
